@@ -2,8 +2,12 @@
 .gradle/
 build/
 gradle-app.setting
-!gradle-wrapper.jar
 .gradletasknamecache
+
+# Keep Gradle Wrapper
+!gradle/wrapper/gradle-wrapper.jar
+!gradlew
+!gradlew.bat
 
 # Java
 *.class
