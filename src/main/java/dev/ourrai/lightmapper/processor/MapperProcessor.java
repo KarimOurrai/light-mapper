@@ -11,7 +11,6 @@ import javax.lang.model.element.*;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.util.*;
 
@@ -23,14 +22,12 @@ import java.util.*;
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class MapperProcessor extends AbstractProcessor {
     
-    private Types typeUtils;
     private Elements elementUtils;
     private Filer filer;
     
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
-        typeUtils = processingEnv.getTypeUtils();
         elementUtils = processingEnv.getElementUtils();
         filer = processingEnv.getFiler();
     }
