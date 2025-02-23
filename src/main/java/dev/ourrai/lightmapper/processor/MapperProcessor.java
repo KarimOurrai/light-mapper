@@ -19,11 +19,13 @@ import java.util.*;
     "dev.ourrai.lightmapper.annotations.Mapper",
     "dev.ourrai.lightmapper.annotations.MapField"
 })
-@SupportedSourceVersion(SourceVersion.RELEASE_11)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class MapperProcessor extends AbstractProcessor {
     
     private Elements elementUtils;
     private Filer filer;
+    
+    record MappingField(String sourceName, String targetName) {}
     
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -34,17 +36,14 @@ public class MapperProcessor extends AbstractProcessor {
     
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        for (Element element : roundEnv.getElementsAnnotatedWith(Mapper.class)) {
-            if (element.getKind() != ElementKind.CLASS) {
-                continue;
-            }
-            
-            TypeElement classElement = (TypeElement) element;
-            Mapper mapperAnnotation = classElement.getAnnotation(Mapper.class);
-            TypeMirror targetType = getTypeMirror(mapperAnnotation);
-            
-            generateMapper(classElement, targetType);
-        }
+        roundEnv.getElementsAnnotatedWith(Mapper.class).stream()
+            .filter(element -> element.getKind() == ElementKind.CLASS)
+            .map(TypeElement.class::cast)
+            .forEach(classElement -> {
+                var mapperAnnotation = classElement.getAnnotation(Mapper.class);
+                var targetType = getTypeMirror(mapperAnnotation);
+                generateMapper(classElement, targetType);
+            });
         return true;
     }
     
@@ -58,43 +57,34 @@ public class MapperProcessor extends AbstractProcessor {
     }
     
     private void generateMapper(TypeElement sourceClass, TypeMirror targetType) {
-        String packageName = elementUtils.getPackageOf(sourceClass).getQualifiedName().toString();
-        String className = sourceClass.getSimpleName() + "Mapper";
+        var packageName = elementUtils.getPackageOf(sourceClass).getQualifiedName().toString();
+        var className = sourceClass.getSimpleName() + "Mapper";
         
-        MethodSpec.Builder mapMethodBuilder = MethodSpec.methodBuilder("map")
+        var mappingFields = sourceClass.getEnclosedElements().stream()
+            .filter(element -> element.getKind() == ElementKind.FIELD)
+            .filter(element -> element.getAnnotation(MapField.class) != null)
+            .map(element -> {
+                var mapField = element.getAnnotation(MapField.class);
+                var sourceName = element.getSimpleName().toString();
+                var targetName = mapField.targetField().isEmpty() ? sourceName : mapField.targetField();
+                return new MappingField(sourceName, targetName);
+            })
+            .toList();
+            
+        var constructorParams = mappingFields.stream()
+            .map(field -> "source.get" + capitalize(field.sourceName) + "()")
+            .collect(java.util.stream.Collectors.joining(", "));
+        
+        var mapMethod = MethodSpec.methodBuilder("map")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .returns(TypeName.get(targetType))
-            .addParameter(TypeName.get(sourceClass.asType()), "source");
+            .addParameter(TypeName.get(sourceClass.asType()), "source")
+            .addStatement("return new $T(" + constructorParams + ")", TypeName.get(targetType))
+            .build();
             
-        mapMethodBuilder.addStatement("$T target = new $T()", 
-            TypeName.get(targetType), TypeName.get(targetType));
-            
-        for (Element enclosed : sourceClass.getEnclosedElements()) {
-            if (enclosed.getKind() != ElementKind.FIELD) {
-                continue;
-            }
-            
-            MapField mapField = enclosed.getAnnotation(MapField.class);
-            if (mapField == null) {
-                continue;
-            }
-            
-            String fieldName = enclosed.getSimpleName().toString();
-            String targetFieldName = mapField.targetField().isEmpty() ? 
-                fieldName : mapField.targetField();
-                
-            String getterName = "get" + capitalize(fieldName);
-            String setterName = "set" + capitalize(targetFieldName);
-            
-            mapMethodBuilder.addStatement("target.$L(source.$L())", 
-                setterName, getterName);
-        }
-        
-        mapMethodBuilder.addStatement("return target");
-        
-        TypeSpec mapperClass = TypeSpec.classBuilder(className)
+        var mapperClass = TypeSpec.classBuilder(className)
             .addModifiers(Modifier.PUBLIC)
-            .addMethod(mapMethodBuilder.build())
+            .addMethod(mapMethod)
             .build();
             
         try {

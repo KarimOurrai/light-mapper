@@ -14,8 +14,8 @@ class MapperTest {
         PersonDto dto = PersonMapper.map(person);
         
         // Then
-        assertEquals("John Doe", dto.getName());
-        assertEquals(1990, dto.getYearOfBirth());
+        assertEquals("John Doe", dto.name());
+        assertEquals(1990, dto.yearOfBirth());
     }
     
     @Test
@@ -27,8 +27,8 @@ class MapperTest {
         PersonDto dto = PersonMapper.map(person);
         
         // Then
-        assertNull(dto.getName());
-        assertEquals(0, dto.getYearOfBirth());
+        assertNull(dto.name());
+        assertEquals(0, dto.yearOfBirth());
     }
     
     @Test
@@ -42,9 +42,9 @@ class MapperTest {
         PersonDto dto2 = PersonMapper.map(person2);
         
         // Then
-        assertEquals("Alice", dto1.getName());
-        assertEquals(1985, dto1.getYearOfBirth());
-        assertEquals("Bob", dto2.getName());
-        assertEquals(1995, dto2.getYearOfBirth());
+        assertEquals("Alice", dto1.name());
+        assertEquals(1985, dto1.yearOfBirth());
+        assertEquals("Bob", dto2.name());
+        assertEquals(1995, dto2.yearOfBirth());
     }
 } 
