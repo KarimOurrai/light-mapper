@@ -5,7 +5,6 @@ gradle-app.setting
 .gradletasknamecache
 
 # Keep Gradle Wrapper
-!gradle/wrapper/gradle-wrapper.jar
 !gradlew
 !gradlew.bat
 

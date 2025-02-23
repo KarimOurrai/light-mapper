@@ -26,10 +26,15 @@ jobs:
       run: chmod +x ./gradlew
         
     - name: Setup Gradle
-      uses: gradle/gradle-build-action@v3
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: 8.5
+        
+    - name: Validate Gradle wrapper
+      uses: gradle/wrapper-validation-action@v2
     
     - name: Build with Gradle
-      run: ./gradlew build
+      run: ./gradlew build --scan
       
     - name: Run tests
       run: ./gradlew test
